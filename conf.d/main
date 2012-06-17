@@ -11,3 +11,14 @@ SRC=/usr/local/src
 WEBROOT=/var/www/typo3
 VERSION=4.7
 
+# unpack and set required permissions
+tar -zxf $SRC/introductionpackage-*.tar.gz -C $(dirname $WEBROOT)
+mv $(dirname $WEBROOT)/introductionpackage-* $WEBROOT
+rm $SRC/introductionpackage-*.tar.gz
+chown -R root:root $WEBROOT
+chown -R www-data:www-data $WEBROOT/uploads
+chown -R www-data:www-data $WEBROOT/fileadmin
+chown -R www-data:www-data $WEBROOT/typo3temp
+chown -R www-data:www-data $WEBROOT/typo3conf
+chown -R www-data:www-data $WEBROOT/typo3/ext
+
