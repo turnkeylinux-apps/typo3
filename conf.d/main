@@ -1,0 +1,13 @@
+#!/bin/sh -ex
+
+DB_NAME=typo3
+DB_USER=typo3
+DB_PASS=$(mcookie)
+
+ADMIN_NAME=admin
+ADMIN_PASS=turnkey
+
+SRC=/usr/local/src
+WEBROOT=/var/www/typo3
+VERSION=4.7
+
