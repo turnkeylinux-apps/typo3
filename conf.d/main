@@ -22,3 +22,8 @@ chown -R www-data:www-data $WEBROOT/typo3temp
 chown -R www-data:www-data $WEBROOT/typo3conf
 chown -R www-data:www-data $WEBROOT/typo3/ext
 
+# configure apache
+a2dissite default
+a2ensite typo3
+a2enmod rewrite
+
