@@ -1,0 +1,12 @@
+#!/bin/bash -ex
+
+dl() {
+    [ "$FAB_HTTP_PROXY" ] && PROXY="--proxy $FAB_HTTP_PROXY"
+    cd $2; curl -L -f -O $PROXY $1; cd -
+}
+
+VERSION="6.0.3" # keep insync with conf.d/main
+URL="http://prdownloads.sourceforge.net/typo3/introductionpackage-${VERSION}.tar.gz"
+
+dl $URL /usr/local/src
+

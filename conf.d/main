@@ -9,7 +9,7 @@ ADMIN_PASS=turnkey
 
 SRC=/usr/local/src
 WEBROOT=/var/www/typo3
-VERSION=4.7
+VERSION="6.0" # keep insync with conf.d/downloads (major version)
 
 # unpack and set required permissions
 tar -zxf $SRC/introductionpackage-*.tar.gz -C $(dirname $WEBROOT)
@@ -47,8 +47,8 @@ CURL="curl -c /tmp/cookie -b /tmp/cookie"
 $CURL "${URL}&step=1&password=joh316"
 $CURL "${URL}&step=1&password=joh316"
 $CURL "${URL_CONFIG}step=1" --data "step=2"
-$CURL "${URL_CONFIG}step=2" --data "step=3&TYPO3_INSTALL%5Blocalconf.php%5D%5BencryptionKey%5D=$(mcookie)$(mcookie)$(mcookie)&TYPO3_INSTALL%5Blocalconf.php%5D%5Bcompat_version%5D=$VERSION&TYPO3_INSTALL%5Blocalconf.php%5D%5Btypo_db_driver%5D=mysql&TYPO3_INSTALL%5Blocalconf.php%5D%5Btypo_db_username%5D=$DB_USER&TYPO3_INSTALL%5Blocalconf.php%5D%5Btypo_db_password%5D=$DB_PASS&TYPO3_INSTALL%5Blocalconf.php%5D%5Btypo_db_host%5D=localhost"
-$CURL "${URL_CONFIG}step=3" --data "step=4&TYPO3_INSTALL%5Bdb_select_option%5D=EXISTING&TYPO3_INSTALL%5Blocalconf.php%5D%5Btypo_db%5D=$DB_NAME"
+$CURL "${URL_CONFIG}step=2" --data "step=3&TYPO3_INSTALL%5BLocalConfiguration%5D%5BencryptionKey%5D=$(mcookie)$(mcookie)$(mcookie)&TYPO3_INSTALL%5BLocalConfiguration%5D%5Bcompat_version%5D=$VERSION&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_driver%5D=mysql&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_username%5D=$DB_USER&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_password%5D=$DB_PASS&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_host%5D=localhost"
+$CURL "${URL_CONFIG}step=3" --data "step=4&TYPO3_INSTALL%5Bdb_select_option%5D=EXISTING&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db%5D=$DB_NAME"
 $CURL "${URL_DATABASE}step=4"
 $CURL "${URL_DATABASE}step=5" --data "systemToInstall=Introduction&TYPO3_INSTALL%5Bdatabase_type%5D=import%7CCURRENT_TABLES%2BSTATIC&TYPO3_INSTALL%5Bdatabase_import_all%5D=1"
 $CURL "${URL_DATABASE}step=5&systemToInstall=Introduction"
@@ -58,7 +58,7 @@ $CURL "${URL_DATABASE}step=6" --data "password=$ADMIN_PASS&useRealURL=1&colorPic
 rm -f /tmp/cookie
 
 # secure sensitive files
-chmod 640 $WEBROOT/typo3conf/localconf.php
+chmod 640 $WEBROOT/typo3conf/LocalConfiguration.php
 
 # stop services
 /etc/init.d/mysql stop
