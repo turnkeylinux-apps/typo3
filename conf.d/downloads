@@ -5,8 +5,7 @@ dl() {
     cd $2; curl -L -f -O $PROXY $1; cd -
 }
 
-VERSION="6.0.3" # keep insync with conf.d/main
-URL="http://prdownloads.sourceforge.net/typo3/introductionpackage-${VERSION}.tar.gz"
-
+VERSION="7.3.1" # keep insync with conf.d/main
+URL="http://downloads.sourceforge.net/project/typo3/TYPO3%20Source%20and%20Dummy/TYPO3%20$VERSION/typo3_src-$VERSION.tar.gz"
 dl $URL /usr/local/src
 
