@@ -1,3 +1,14 @@
+turnkey-typo3-14.0 (1) turnkey; urgency=low
+
+  * Upgraded to latest major version of Typo3 (7.3.1).
+
+  * Installs the Introduction package by default.
+ 
+  * Note: Please refer to turnkey-core's changelog for changes common to all
+    appliances. Here we only describe changes specific to this appliance.
+
+ -- Anton Pyrogovskyi <q@dae.pp.ua>  Thu, 9 Jul 2015 21:03:19 +0300
+
 turnkey-typo3-13.0 (1) turnkey; urgency=low
 
   * PHPMyAdmin:

@@ -49,7 +49,7 @@ def main():
         m.execute('UPDATE typo3.be_users SET password=\"%s\" WHERE username=\"%s\";' % (hash, username))
 
     config = "/var/www/typo3/typo3conf/LocalConfiguration.php"
-    system("sed -i \"s|?>|\$TYPO3_CONF_VARS['BE']['installToolPassword'] = '%s';\\n// Updated by inithook\\n?>|\" %s" % (hash, config))
+    system("sed -i \"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '%s', // Updated by inithook|\" %s" % (hash, config))
 
 if __name__ == "__main__":
     main()

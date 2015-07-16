@@ -5,27 +5,41 @@ DB_USER=typo3
 DB_PASS=$(mcookie)
 
 ADMIN_NAME=admin
-ADMIN_PASS=turnkey
+ADMIN_PASS=turnkey1
 
 SRC=/usr/local/src
 WEBROOT=/var/www/typo3
-VERSION="6.0" # keep insync with conf.d/downloads (major version)
+VERSION="7.0" # keep insync with conf.d/downloads (major version)
 
 # unpack and set required permissions
-tar -zxf $SRC/introductionpackage-*.tar.gz -C $(dirname $WEBROOT)
-mv $(dirname $WEBROOT)/introductionpackage-* $WEBROOT
-rm $SRC/introductionpackage-*.tar.gz
-chown -R root:root $WEBROOT
-chown -R www-data:www-data $WEBROOT/uploads
-chown -R www-data:www-data $WEBROOT/fileadmin
-chown -R www-data:www-data $WEBROOT/typo3temp
-chown -R www-data:www-data $WEBROOT/typo3conf
-chown -R www-data:www-data $WEBROOT/typo3/ext
+mkdir -p $WEBROOT
+tar -zxf $SRC/typo3_src-*.tar.gz -C $(dirname $WEBROOT)
+rm $SRC/typo3_src-*.tar.gz
+
+cd $WEBROOT
+ln -s ../typo3_src-* typo3_src
+ln -s typo3_src/index.php index.php
+ln -s typo3_src/typo3 typo3
+cd -
+
+chown -R www-data:www-data $WEBROOT
+touch $WEBROOT/FIRST_INSTALL
+
+CONF=/etc/php5/apache2/php.ini
+
+sed -i -e " \
+    s|^\(upload_max_filesize =\) .*$|\1 10M|; \
+    s|^\(memory_limit =\) .*$|\1 64M|; \
+    s|^\(max_execution_time =\) .*$|\1 240| \
+" $CONF
+
+sed -i -e "s|^\(memory_limit =\) .*$|\1 64M|;" /etc/php5/cli/php.ini
 
 # configure apache
 a2dissite 000-default
 a2ensite typo3
 a2enmod rewrite
+a2enmod expires
 
 # start services
 /etc/init.d/mysql start
@@ -38,27 +52,48 @@ MYSQL_ADMIN="mysqladmin --user=root --password=$MYSQL_PASS"
 $MYSQL_ADMIN create $DB_NAME
 $MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
 
-# curl based install
-URL="http://127.0.0.1/typo3/install/index.php?mode=123"
-URL_CONFIG="${URL}&TYPO3_INSTALL\[type\]=config&"
-URL_DATABASE="${URL}&TYPO3_INSTALL\[type\]=database&"
-CURL="curl -c /tmp/cookie -b /tmp/cookie"
+cat > /tmp/typo3.twill <<EOF
+go http://127.0.0.1
 
-$CURL "${URL}&step=1&password=joh316"
-$CURL "${URL}&step=1&password=joh316"
-$CURL "${URL_CONFIG}step=1" --data "step=2"
-$CURL "${URL_CONFIG}step=2" --data "step=3&TYPO3_INSTALL%5BLocalConfiguration%5D%5BencryptionKey%5D=$(mcookie)$(mcookie)$(mcookie)&TYPO3_INSTALL%5BLocalConfiguration%5D%5Bcompat_version%5D=$VERSION&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_driver%5D=mysql&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_username%5D=$DB_USER&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_password%5D=$DB_PASS&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db_host%5D=localhost"
-$CURL "${URL_CONFIG}step=3" --data "step=4&TYPO3_INSTALL%5Bdb_select_option%5D=EXISTING&TYPO3_INSTALL%5BDatabase%5D%5Btypo_db%5D=$DB_NAME"
-$CURL "${URL_DATABASE}step=4"
-$CURL "${URL_DATABASE}step=5" --data "systemToInstall=Introduction&TYPO3_INSTALL%5Bdatabase_type%5D=import%7CCURRENT_TABLES%2BSTATIC&TYPO3_INSTALL%5Bdatabase_import_all%5D=1"
-$CURL "${URL_DATABASE}step=5&systemToInstall=Introduction"
-$CURL "${URL_DATABASE}step=5&subpackage=Introduction"
-$CURL "${URL_DATABASE}step=6" --data "password=$ADMIN_PASS&useRealURL=1&colorPicker=%23F18F0B"
+fv 1 1 nop
+submit
+fv 1 username $DB_USER
+fv 1 password $DB_PASS
+fv 1 9 tcp
+submit
+fv 1 existing $DB_NAME
+submit
+fv 1 username $ADMIN_NAME
+fv 1 password $ADMIN_PASS
+fv 1 sitename 'TurnKey TYPO3'
+submit
+fv 1 loaddistributions 0
+submit
+EOF
 
-rm -f /tmp/cookie
+twill-sh /tmp/typo3.twill
+rm -f $WEBROOT/_.htaccess /tmp/typo3.twill
 
-# secure sensitive files
-chmod 640 $WEBROOT/typo3conf/LocalConfiguration.php
+$MYSQL_BATCH --execute "INSERT INTO typo3.be_users (username, password) VALUES ('_cli_lowlevel', 'null');"
+
+su - www-data -s /bin/bash << EOF
+cd $WEBROOT/typo3conf/ext
+curl -O https://raw.githubusercontent.com/oliversalzburg/typo3scripts/master/extExtract.php
+
+php extExtract.php --output-dir="$WEBROOT/typo3conf/ext/bootstrap_package" --base="$WEBROOT/typo3" --force-version=6.2.13 bootstrap_package
+php extExtract.php --output-dir="$WEBROOT/typo3conf/ext/realurl" --base="$WEBROOT/typo3" --force-version=1.13.3 realurl
+php extExtract.php --output-dir="$WEBROOT/typo3conf/ext/introduction" --base="$WEBROOT/typo3" --force-version=2.2.0 introduction
+
+$WEBROOT/typo3/cli_dispatch.phpsh extbase extension:install bootstrap_package
+$WEBROOT/typo3/cli_dispatch.phpsh extbase extension:install realurl
+
+rm -rf $WEBROOT/typo3temp/autoload
+$WEBROOT/typo3/cli_dispatch.phpsh extbase extension:install introduction
+rm -f extExtract.php
+EOF
+
+chown -R www-data:www-data $WEBROOT/typo3temp
+chown -R www-data:www-data $WEBROOT/typo3conf
 
 # stop services
 /etc/init.d/mysql stop
