@@ -1,7 +1,7 @@
-Typo3 - Enterprise CMS
+TYPO3 CMS - Enterprise CMS
 ======================
 
-`Typo3`_ is an enterprise-class, Open Source CMS (Content Management
+`TYPO3 CMS`_ is an enterprise-class, Open Source CMS (Content Management
 System) with a vast international community of developers and
 supporters. It's used to build and manage websites of all types, from
 small sites for non-profits to multilingual enterprise solutions for
@@ -10,7 +10,7 @@ large corporations.
 This appliance includes all the standard features in `TurnKey Core`_,
 and on top of that:
 
-- Typo3 configurations:
+- TYPO3 CMS configurations:
    
    - Installed from upstream source code to /var/www/typo3
 
@@ -25,9 +25,9 @@ Credentials *(passwords set at first boot)*
 -------------------------------------------
 
 -  Webmin, SSH, MySQL, Adminer: username **root**
--  Typo3: username **admin**
+-  TYPO3 CMS: username **admin**
 
 
-.. _Typo3: http://typo3.org/
+.. _TYPO3 CMS: http://typo3.org/
 .. _TurnKey Core: https://www.turnkeylinux.org/core
 .. _Adminer: http://www.adminer.net

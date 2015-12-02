@@ -39,8 +39,8 @@ def main():
     if not password:
         d = Dialog('TurnKey Linux - First boot configuration')
         password = d.get_password(
-            "Typo3 Password",
-            "Enter new password for the Typo3 'admin' account.")
+            "TYPO3 CMS Password",
+            "Enter new password for the TYPO3 CMS 'admin' account.")
 
     hash = hashlib.md5(password).hexdigest()
 
