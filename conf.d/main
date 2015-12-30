@@ -9,7 +9,6 @@ ADMIN_PASS=turnkey1
 
 SRC=/usr/local/src
 WEBROOT=/var/www/typo3
-VERSION="7.0" # keep insync with conf.d/downloads (major version)
 
 # unpack and set required permissions
 mkdir -p $WEBROOT
