@@ -1,5 +1,5 @@
 TYPO3 CMS - Enterprise CMS
-======================
+==========================
 
 `TYPO3 CMS`_ is an enterprise-class, Open Source CMS (Content Management
 System) with a vast international community of developers and
