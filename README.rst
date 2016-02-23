@@ -32,7 +32,7 @@ Supervised Manual TYPO3 Update
 To upgrade to the latest version of TYPO3 from the command line::
 
     cd /var/www/typo3
-    composer update
+    composer update typo3/cms
 
 We recommend subscribing to the `TYPO3 security bulletin`_
 
