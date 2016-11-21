@@ -50,13 +50,12 @@ composer update typo3/cms
 composer require helhum/typo3-console
 composer require typo3-ter/introduction
 
-cp web/typo3conf/ext/typo3_console/Scripts/typo3cms .
-chmod +x typo3cms
-./typo3cms install:setup --non-interactive TRUE --database-user-name "$DB_USER" --database-user-password "$DB_PASS" --database-host-name localhost --database-name "$DB_NAME" --database-create FALSE --admin-user-name "$ADMIN_NAME" --admin-password "$ADMIN_PASS" --site-name "TurnKey TYPO3"
-./typo3cms database:updateschema '*.*'
-./typo3cms extension:install realurl || true
-./typo3cms extension:install bootstrap_package
-./typo3cms extension:install introduction
+ln -s $WEBROOT/vendor/bin/typo3cms .
+
+./typo3cms install:setup --non-interactive TRUE --database-user-name "$DB_USER" --database-user-password "$DB_PASS" --database-host-name localhost --database-name "$DB_NAME" --use-existing-database --admin-user-name "$ADMIN_NAME" --admin-password "$ADMIN_PASS" --site-name "TurnKey TYPO3"
+./typo3cms extension:activate bootstrap_package
+./typo3cms extension:activate introduction
+./typo3cms extension:setupactive
 
 composer dump-autoload --optimize
 
