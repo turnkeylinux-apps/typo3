@@ -1,3 +1,12 @@
+turnkey-typo3-14.2 (1) turnkey; urgency=low
+
+  * Upgraded to latest LTS version of TYPO3 (7.6.12).
+
+  * Note: Please refer to turnkey-core's changelog for changes common to all
+    appliances. Here we only describe changes specific to this appliance.
+
+ -- Anton Pyrogovskyi <anton@turnkeylinux.org>  Mon, 21 Nov 2016 18:25:43 +0000
+
 turnkey-typo3-14.1 (1) turnkey; urgency=low
 
   * Changed visible references of 'Typo3' to 'TYPO3' [#463].
