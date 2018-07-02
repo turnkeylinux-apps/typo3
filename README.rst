@@ -39,7 +39,8 @@ We recommend subscribing to the `TYPO3 security bulletin`_
 Credentials *(passwords set at first boot)*
 -------------------------------------------
 
--  Webmin, SSH, MySQL, Adminer: username **root**
+-  Webmin, SSH, MySQL: username **root**
+-  Adminer: username **adminer**
 -  TYPO3 CMS: username **admin**
 
 
