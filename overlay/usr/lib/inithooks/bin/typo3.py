@@ -48,7 +48,7 @@ def main():
     for username in ('admin', 'simple_editor', 'advanced_editor', 'news_editor'):
         m.execute('UPDATE typo3.be_users SET password=\"%s\" WHERE username=\"%s\";' % (hash, username))
 
-    config = "/var/www/typo3/web/typo3conf/LocalConfiguration.php"
+    config = "/var/www/typo3/public/typo3conf/LocalConfiguration.php"
     system("sed -i \"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '%s', // Updated by inithook|\" %s" % (hash, config))
 
 if __name__ == "__main__":
