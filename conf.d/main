@@ -48,7 +48,7 @@ sed -i "s|http://composer.typo3.org/|https://composer.typo3.org/|" composer.json
 composer update typo3/cms
 
 composer require helhum/typo3-console
-composer require typo3-ter/introduction='2.3.0'
+composer require typo3-ter/introduction='3.0.0'
 
 ln -s $WEBROOT/vendor/bin/typo3cms .
 
