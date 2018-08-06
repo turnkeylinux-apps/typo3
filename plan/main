@@ -5,6 +5,7 @@ php-gd
 php-cli
 php-curl
 php-xml
+php-zip
 
 unzip
 python-twill
