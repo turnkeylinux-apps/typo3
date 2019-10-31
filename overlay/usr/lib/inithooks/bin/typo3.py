@@ -14,12 +14,14 @@ from dialog_wrapper import Dialog
 from mysqlconf import MySQL
 from executil import system
 
+
 def usage(s=None):
     if s:
         print >> sys.stderr, "Error:", s
     print >> sys.stderr, "Syntax: %s [options]" % sys.argv[0]
     print >> sys.stderr, __doc__
     sys.exit(1)
+
 
 def main():
     try:
@@ -53,4 +55,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
