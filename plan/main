@@ -6,6 +6,11 @@ php-cli
 php-curl
 php-xml
 php-zip
+php-mbstring
+php-json
+php-intl
+
+imagemagick
 
 unzip
-python-twill
+python3-argon2

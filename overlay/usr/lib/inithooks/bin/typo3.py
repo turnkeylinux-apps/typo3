@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Set Typo3 admin password
 
 Option:
@@ -8,18 +8,17 @@ Option:
 
 import sys
 import getopt
-import hashlib
+from argon2 import PasswordHasher
 
 from dialog_wrapper import Dialog
 from mysqlconf import MySQL
-from executil import system
-
+import subprocess
 
 def usage(s=None):
     if s:
-        print >> sys.stderr, "Error:", s
-    print >> sys.stderr, "Syntax: %s [options]" % sys.argv[0]
-    print >> sys.stderr, __doc__
+        print("Error:", s, file=sys.stderr)
+    print("Syntax: %s [options]" % sys.argv[0], file=sys.stderr)
+    print(__doc__, file=sys.stderr)
     sys.exit(1)
 
 
@@ -27,7 +26,7 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "h",
                                        ['help', 'pass='])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         usage(e)
 
     password = ""
@@ -44,14 +43,22 @@ def main():
             "TYPO3 CMS Password",
             "Enter new password for the TYPO3 CMS 'admin' account.")
 
-    hash = hashlib.md5(password).hexdigest()
+    ph = PasswordHasher(
+            time_cost=16,
+            memory_cost = 65536,
+            parallelism = 1,
+            encoding = 'utf8')
+    hash = ph.hash(password)
 
     m = MySQL()
     for username in ('admin', 'simple_editor', 'advanced_editor', 'news_editor'):
-        m.execute('UPDATE typo3.be_users SET password=\"%s\" WHERE username=\"%s\";' % (hash, username))
+        m.execute('UPDATE typo3.be_users SET password=%s WHERE username=%s;', (hash, username))
 
     config = "/var/www/typo3/public/typo3conf/LocalConfiguration.php"
-    system("sed -i \"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '%s', // Updated by inithook|\" %s" % (hash, config))
+    subprocess.run([
+        "sed", "-i",
+        f"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '{hash}', // Updated by inithook|",
+        config])
 
 if __name__ == "__main__":
     main()
