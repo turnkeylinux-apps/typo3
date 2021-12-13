@@ -1,3 +1,16 @@
+turnkey-typo3-17.0 (1) turnkey; urgency=low
+
+  * Upgraded to latest LTS version of TYPO3 11.x via composer: 11.5.3
+
+  * Updated all relevant Debian packages to Bullseye/11 versions
+
+  * Includes PHP 7.4.
+
+  * Note: Please refer to turnkey-core's 17.0 changelog for changes common to all
+    appliances. Here we only describe changes specific to this appliance.
+
+ -- Stefan Davis <stefan@turnkeylinux.org>  Mon, 13 Dec 2021 23:31:44 +0000
+
 turnkey-typo3-16.1 (1) turnkey; urgency=low
 
   * Upgraded to latest LTS version of TYPO3 10.x via composer: 10.4.14.
@@ -167,4 +180,3 @@ turnkey-typo3-12.0 (1) turnkey; urgency=low
     appliances. Here we only describe changes specific to this appliance.
 
  -- Alon Swartz <alon@turnkeylinux.org>  Wed, 01 Aug 2012 08:00:00 +0200
-
