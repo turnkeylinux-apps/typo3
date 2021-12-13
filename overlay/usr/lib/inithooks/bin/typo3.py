@@ -10,7 +10,7 @@ import sys
 import getopt
 from argon2 import PasswordHasher
 
-from dialog_wrapper import Dialog
+from libinithooks.dialog_wrapper import Dialog
 from mysqlconf import MySQL
 import subprocess
 

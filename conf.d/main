@@ -9,7 +9,7 @@ ADMIN_PASS=turnkey1
 
 WEBROOT=/var/www/typo3
 
-CONF=/etc/php/7.3/apache2/php.ini
+CONF=/etc/php/7.4/apache2/php.ini
 
 sed -i -e "\
     s|^;\? \?\(upload_max_filesize =\) .*$|\1 10M|; \
@@ -20,7 +20,7 @@ sed -i -e "\
     s|^;\? \?\(always_populate_raw_post_data =\) .*$|\1 -1| \
 " $CONF
 
-sed -i -e "s|^;\? \?\(memory_limit =\) .*$|\1 128M|;" /etc/php/7.3/cli/php.ini
+sed -i -e "s|^;\? \?\(memory_limit =\) .*$|\1 128M|;" /etc/php/7.4/cli/php.ini
 
 # configure apache
 a2dissite 000-default
@@ -42,7 +42,7 @@ $MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost
 cd $(dirname $WEBROOT)
 
 chown -R www-data:www-data $(dirname $WEBROOT)
-turnkey-composer create-project typo3/cms-base-distribution='^10.4' typo3 --no-interaction || true
+turnkey-composer create-project typo3/cms-base-distribution='^11.5' typo3 --no-interaction || true
 # work around issue "Your configuration does not allow connection to http://composer.typo3.org..."
 cd $WEBROOT
 sed -i "s|http://composer.typo3.org/|https://composer.typo3.org/|" composer.json
@@ -53,18 +53,17 @@ turnkey-composer update typo3/cms
 ln -s $WEBROOT/vendor/bin/typo3cms .
 
 ./typo3cms install:setup --no-interaction --database-user-name "$DB_USER" --database-user-password "$DB_PASS" --database-host-name localhost --database-name "$DB_NAME" --use-existing-database --admin-user-name "$ADMIN_NAME" --admin-password "$ADMIN_PASS" --site-name "TurnKey TYPO3"
+./typo3cms install:extensionsetupifpossible
 
 turnkey-composer require typo3/cms-introduction
-
-./typo3cms install:generatepackagestates
-./typo3cms extension:activate introduction
-./typo3cms extension:setupactive
 
 turnkey-composer dump-autoload --optimize
 
 chown -R root:root $(dirname $WEBROOT)
 chown -R www-data:www-data $WEBROOT/
-rm -f $WEBROOT/_.htaccess
+
+cp /var/www/typo3/public/typo3/sysext/install/Resources/Private/FolderStructureTemplateFiles/root-htaccess \
+    /var/www/typo3/public/.htaccess
 
 # stop services
 service mysql stop
