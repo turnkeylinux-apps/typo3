@@ -12,15 +12,14 @@ WEBROOT=/var/www/typo3
 CONF=/etc/php/7.4/apache2/php.ini
 
 sed -i -e "\
-    s|^;\? \?\(upload_max_filesize =\) .*$|\1 10M|; \
-    s|^;\? \?\(memory_limit =\) .*$|\1 64M|; \
-    s|^;\? \?\(max_execution_time =\) .*$|\1 240|; \
-    s|^;\? \?\(max_input_vars =\) .*$|\1 1500|; \
-    s|^;\? \?\(memory_limit =\) .*$|\1 128M|; \
-    s|^;\? \?\(always_populate_raw_post_data =\) .*$|\1 -1| \
+    s|^;\? \?\(upload_max_filesize =\) \?.*$|\1 10M|; \
+    s|^;\? \?\(memory_limit =\) \?.*$|\1 128M|; \
+    s|^;\? \?\(max_execution_time =\) \?.*$|\1 240|; \
+    s|^;\? \?\(max_input_vars =\) \?.*$|\1 1500|; \
+    s|^;\? \?\(always_populate_raw_post_data =\) \?.*$|\1 -1| \
 " $CONF
 
-sed -i -e "s|^;\? \?\(memory_limit =\) .*$|\1 128M|;" /etc/php/7.4/cli/php.ini
+sed -i -E 's|^;? ?(memory_limit =) ?.*$|\1 256M|;' /etc/php/7.4/cli/php.ini
 
 # configure apache
 a2dissite 000-default
@@ -56,6 +55,7 @@ ln -s $WEBROOT/vendor/bin/typo3cms .
 ./typo3cms install:extensionsetupifpossible
 
 turnkey-composer require typo3/cms-introduction
+COMPOSER_MEMORY_LIMIT=-1 turnkey-composer exec typo3 extension:setup
 
 turnkey-composer dump-autoload --optimize
 
