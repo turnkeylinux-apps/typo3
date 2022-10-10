@@ -1,3 +1,13 @@
+turnkey-typo3-17.1 (1) turnkey; urgency=low
+
+  * Updated all Debian packages to latest.
+    [ autopatched by buildtasks ]
+
+  * Patched bugfix release. Closes #1734.
+    [ autopatched by buildtasks ]
+
+ -- Jeremy Davis <jeremy@turnkeylinux.org>  Wed, 14 Sep 2022 07:04:08 +0000
+
 turnkey-typo3-17.0 (1) turnkey; urgency=low
 
   * Upgraded to latest LTS version of TYPO3 11.x via composer: 11.5.3
