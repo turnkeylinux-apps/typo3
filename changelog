@@ -1,3 +1,14 @@
+turnkey-typo3-18.0 (1) turnkey; urgency=low
+
+  * Upgraded to latest LTS version of TYPO3 12.x via composer: 12.4.0
+
+  * Includes PHP 8.2.
+
+  * Updated all Debian packages to latest.
+    [ autopatched by buildtasks ]
+
+ -- Zhenya Hvorostian <zhenya@turnkeylinux.org>  Tue, 19 Dec 2023 12:25:00 +0300
+
 turnkey-typo3-17.1 (1) turnkey; urgency=low
 
   * Updated all Debian packages to latest.

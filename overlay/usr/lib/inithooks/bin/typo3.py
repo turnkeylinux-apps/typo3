@@ -1,13 +1,15 @@
 #!/usr/bin/python3
-"""Set Typo3 admin password
+"""Set Typo3 admin password, email and domain
 
 Option:
     --pass=     unless provided, will ask interactively
+    --email=    unless provided, will ask interactively
 
 """
 
 import sys
 import getopt
+from libinithooks import inithooks_cache
 from argon2 import PasswordHasher
 
 from libinithooks.dialog_wrapper import Dialog
@@ -21,6 +23,7 @@ def usage(s=None):
     print(__doc__, file=sys.stderr)
     sys.exit(1)
 
+DEFAULT_DOMAIN = "example.com"
 
 def main():
     try:
@@ -40,8 +43,19 @@ def main():
     if not password:
         d = Dialog('TurnKey Linux - First boot configuration')
         password = d.get_password(
-            "TYPO3 CMS Password",
-            "Enter new password for the TYPO3 CMS 'admin' account.")
+            "TYPO3 Password",
+            "Enter new password for the TYPO3 'admin' account.")
+
+    if not email:
+        if 'd' not in locals():
+            d = Dialog('TurnKey Linux - First boot configuration')
+
+        email = d.get_email(
+            "TYPO3 Email",
+            "Enter email address for the TYPO3 'admin' account.",
+            "admin@example.com")
+
+    inithooks_cache.write('APP_EMAIL', email)
 
     ph = PasswordHasher(
             time_cost=16,
@@ -52,9 +66,10 @@ def main():
 
     m = MySQL()
     for username in ('admin', 'simple_editor', 'advanced_editor', 'news_editor'):
-        m.execute('UPDATE typo3.be_users SET password=%s WHERE username=%s;', (hash, username))
+        m.execute('UPDATE typo3.be_users SET password=%s WHERE username=%s;', (hash, username, ))
+        m.execute('UPDATE typo3.be_users SET email=%s WHERE username=%s;', (email, username, ))
 
-    config = "/var/www/typo3/public/typo3conf/LocalConfiguration.php"
+    config = "/var/www/typo3/config/system/settings.php"
     subprocess.run([
         "sed", "-i",
         f"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '{hash}', // Updated by inithook|",
@@ -62,3 +77,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
