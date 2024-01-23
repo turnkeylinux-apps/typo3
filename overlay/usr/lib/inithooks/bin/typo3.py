@@ -16,6 +16,7 @@ from libinithooks.dialog_wrapper import Dialog
 from mysqlconf import MySQL
 import subprocess
 
+
 def usage(s=None):
     if s:
         print("Error:", s, file=sys.stderr)
@@ -23,7 +24,6 @@ def usage(s=None):
     print(__doc__, file=sys.stderr)
     sys.exit(1)
 
-DEFAULT_DOMAIN = "example.com"
 
 def main():
     try:
@@ -77,4 +77,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
