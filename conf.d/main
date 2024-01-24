@@ -1,25 +1,17 @@
-#!/bin/sh -ex
+#!/bin/bash -ex
 
 DB_NAME=typo3
 DB_USER=typo3
 DB_PASS=$(mcookie)
 
 ADMIN_NAME=admin
-ADMIN_PASS=turnkey1
+ADMIN_PASS=Turnkey1!!
+ADMIN_EMAIL=admin@example.com
 
 WEBROOT=/var/www/typo3
 
-CONF=/etc/php/7.4/apache2/php.ini
-
-sed -i -e "\
-    s|^;\? \?\(upload_max_filesize =\) \?.*$|\1 10M|; \
-    s|^;\? \?\(memory_limit =\) \?.*$|\1 128M|; \
-    s|^;\? \?\(max_execution_time =\) \?.*$|\1 240|; \
-    s|^;\? \?\(max_input_vars =\) \?.*$|\1 1500|; \
-    s|^;\? \?\(always_populate_raw_post_data =\) \?.*$|\1 -1| \
-" $CONF
-
-sed -i -E 's|^;? ?(memory_limit =) ?.*$|\1 256M|;' /etc/php/7.4/cli/php.ini
+sed -i -E 's|^;? ?(always_populate_raw_post_data =) ?.*$|\1 -1|' /etc/php/?.?/apache2/php.ini
+sed -i -E 's|^;? ?(memory_limit =) ?.*$|\1 256M|;' /etc/php/?.?/cli/php.ini
 
 # configure apache
 a2dissite 000-default
@@ -32,27 +24,34 @@ service mysql start
 service apache2 start
 
 # setup the database
-MYSQL_BATCH="mysql --user=root --password=$MYSQL_PASS --batch"
-MYSQL_ADMIN="mysqladmin --user=root --password=$MYSQL_PASS"
+MYSQL_BATCH="mysql --batch"
 
-$MYSQL_ADMIN create $DB_NAME
+mysqladmin create $DB_NAME
 $MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
 
 cd $(dirname $WEBROOT)
 
 chown -R www-data:www-data $(dirname $WEBROOT)
-turnkey-composer create-project typo3/cms-base-distribution='^11.5' typo3 --no-interaction || true
+turnkey-composer create-project typo3/cms-base-distribution='^12.4' typo3 --no-interaction || true
+
 # work around issue "Your configuration does not allow connection to http://composer.typo3.org..."
 cd $WEBROOT
-sed -i "s|http://composer.typo3.org/|https://composer.typo3.org/|" composer.json
+sed -i '\|://composer.typo3.org/|s|http:|https:|' composer.json
 turnkey-composer update typo3/cms
 
-#composer require helhum/typo3-console
-
-ln -s $WEBROOT/vendor/bin/typo3cms .
-
-./typo3cms install:setup --no-interaction --database-user-name "$DB_USER" --database-user-password "$DB_PASS" --database-host-name localhost --database-name "$DB_NAME" --use-existing-database --admin-user-name "$ADMIN_NAME" --admin-password "$ADMIN_PASS" --site-name "TurnKey TYPO3"
-./typo3cms install:extensionsetupifpossible
+TYPO3_DB_DRIVER=mysqli \
+ TYPO3_DB_USERNAME=$DB_USER \
+ TYPO3_DB_PORT=3306 \
+ TYPO3_DB_HOST=localhost \
+ TYPO3_DB_DBNAME=$DB_NAME \
+ TYPO3_DB_PASSWORD=$DB_PASS \
+ TYPO3_SETUP_ADMIN_EMAIL=$ADMIN_EMAIL \
+ TYPO3_SETUP_ADMIN_USERNAME=$ADMIN_NAME \
+ TYPO3_SETUP_ADMIN_PASSWORD=$ADMIN_PASS \
+ TYPO3_SETUP_CREATE_SITE="https://localhost/" \
+ TYPO3_PROJECT_NAME="TurnKey TYPO3" \
+ TYPO3_SERVER_TYPE="apache" \
+ turnkey-composer exec typo3 setup
 
 turnkey-composer require typo3/cms-introduction
 COMPOSER_MEMORY_LIMIT=-1 turnkey-composer exec typo3 extension:setup
@@ -62,10 +61,10 @@ turnkey-composer dump-autoload --optimize
 chown -R root:root $(dirname $WEBROOT)
 chown -R www-data:www-data $WEBROOT/
 
-cp /var/www/typo3/public/typo3/sysext/install/Resources/Private/FolderStructureTemplateFiles/root-htaccess \
-    /var/www/typo3/public/.htaccess
+turnkey-composer exec typo3 cache:flush
+
+a2dismod evasive
 
 # stop services
 service mysql stop
 service apache2 stop
-
