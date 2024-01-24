@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Set Typo3 admin password, email and domain
+"""Set Typo3 admin password and email
 
 Option:
     --pass=     unless provided, will ask interactively
