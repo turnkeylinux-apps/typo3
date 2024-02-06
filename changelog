@@ -1,6 +1,6 @@
 turnkey-typo3-18.0 (1) turnkey; urgency=low
 
-  * Upgraded to latest LTS version of TYPO3 12.x via composer: 12.4.0
+  * Upgraded to latest LTS version of TYPO3 12.x via composer: 12.4.10
     [Zhenya Hvorostian <zhenya@turnkeylinux.org>]
 
   * Ensure hashfile includes URL to public key - closes #1864.
@@ -78,13 +78,17 @@ turnkey-typo3-18.0 (1) turnkey; urgency=low
 
   * Debian default PHP updated to v8.2.
 
+  * Include new 'tkl-update-php' script - to make updating/changing PHP
+    version easier for end users.
+    [Marcos Méndez @ POPSOLUTIONS <https://github.com/marcos-mendez>]
+
   * DEV: Add support for setting max_execution_time & max_input_vars in
     php.ini via appliance Makefile (PHP_MAX_EXECUTION_TIME &
     PHP_MAX_INPUT_VARS).
 
   * Use MariaDB (MySQL replacement) v10.11.3 (from debian repos).
 
- -- Jeremy Davis <jeremy@turnkeylinux.org>  Tue, 23 Jan 2024 06:19:11 +0000
+ -- Jeremy Davis <jeremy@turnkeylinux.org>  Tue, 06 Feb 2024 01:41:52 +0000
 
 turnkey-typo3-17.1 (1) turnkey; urgency=low
 
