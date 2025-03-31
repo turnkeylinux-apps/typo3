@@ -155,7 +155,7 @@ turnkey-typo3-16.0 (1) turnkey; urgency=low
 
 turnkey-typo3-15.1 (1) turnkey; urgency=low
 
-   Upgraded to latest LTS version of TYPO3 8.x via composer (8.7.20).
+  * Upgraded to latest LTS version of TYPO3 8.x via composer (8.7.20).
 
   * Rebuild to resolve inadvertent removal of mariadb during sec-updates
     - part of #1246.
