@@ -102,6 +102,7 @@ test -n "$REQUEST_TOKEN"
 
 "${CURL[@]}" --cookie "$COOKIE_JAR" --cookie-jar "$COOKIE_JAR" \
     --referer "$LOGIN_URL" --request POST "$BASE_URL$LOGIN_ACTION" \
+    --dump-header "$TMPDIR/login-result.headers" \
     --data-urlencode 'login_status=login' \
     --data-urlencode 'username=admin' \
     --data-urlencode "userident=$ADMIN_PASSWORD" \
@@ -109,7 +110,10 @@ test -n "$REQUEST_TOKEN"
     --data-urlencode "__RequestToken=$REQUEST_TOKEN" \
     --output "$TMPDIR/login-result.html"
 awk '$6 == "be_typo_user" { found=1 } END { exit !found }' "$COOKIE_JAR"
-BACKEND_URL=$(python3 - "$TMPDIR/login-result.html" <<'PY'
+if grep -Fq '[TYPO3 CMS' "$TMPDIR/login-result.html"; then
+    cp "$TMPDIR/login-result.html" "$TMPDIR/backend.html"
+else
+    BACKEND_URL=$(python3 - "$TMPDIR/login-result.html" <<'PY'
 from html.parser import HTMLParser
 import html
 import sys
@@ -127,13 +131,20 @@ class RefreshParser(HTMLParser):
 parser = RefreshParser()
 with open(sys.argv[1], encoding="utf-8") as source:
     parser.feed(source.read())
-if not parser.url:
-    raise SystemExit("authenticated backend redirect was not returned")
 print(parser.url)
 PY
-)
-"${CURL[@]}" --cookie "$COOKIE_JAR" --referer "$LOGIN_URL" "$BACKEND_URL" \
-    --output "$TMPDIR/backend.html"
+    )
+    if [ -z "$BACKEND_URL" ]; then
+        BACKEND_URL=$(sed -n 's/^[Ll]ocation: \(.*\)\r$/\1/p' \
+            "$TMPDIR/login-result.headers" | tail -n1)
+    fi
+    if [[ "$BACKEND_URL" == /* ]]; then
+        BACKEND_URL="$BASE_URL$BACKEND_URL"
+    fi
+    test -n "$BACKEND_URL"
+    "${CURL[@]}" --cookie "$COOKIE_JAR" --referer "$LOGIN_URL" "$BACKEND_URL" \
+        --output "$TMPDIR/backend.html"
+fi
 grep -Fq "TurnKey TYPO3 [TYPO3 CMS $EXPECTED_VERSION]" "$TMPDIR/backend.html"
 grep -Fq '"username":"admin"' "$TMPDIR/backend.html"
 grep -Fq 'Logout' "$TMPDIR/backend.html"
