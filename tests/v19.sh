@@ -2,23 +2,18 @@
 set -euo pipefail
 
 : "${TKL_TEST_RESULT:?TKL_TEST_RESULT must name the evidence output file}"
+: "${TKL_TEST_APP_PASS:?TKL_TEST_APP_PASS must contain the firstboot application password}"
 
 WEBROOT=/var/www/typo3
 EXPECTED_VERSION=13.4.34
 TMPDIR=$(mktemp -d /tmp/typo3-v19.XXXXXX)
 PAGE_UID=
-ORIGINAL_ADMIN_HASH=
 
 cleanup() {
     if [ -n "$PAGE_UID" ]; then
         mariadb typo3 --batch --execute \
             "DELETE FROM pages WHERE uid=$PAGE_UID" >/dev/null 2>&1 || true
         runuser -u www-data -- "$WEBROOT/vendor/bin/typo3" cache:flush \
-            >/dev/null 2>&1 || true
-    fi
-    if [ -n "$ORIGINAL_ADMIN_HASH" ]; then
-        mariadb typo3 --batch --execute \
-            "UPDATE be_users SET password='$ORIGINAL_ADMIN_HASH' WHERE username='admin'" \
             >/dev/null 2>&1 || true
     fi
     find "$TMPDIR" -depth -delete 2>/dev/null || true
@@ -80,13 +75,8 @@ PY
 "${CURL[@]}" "$BASE_URL$ASSET_PATH" --output "$TMPDIR/asset"
 test "$(wc -c < "$TMPDIR/asset")" -gt 100
 
-ORIGINAL_ADMIN_HASH=$(mariadb typo3 --batch --skip-column-names \
-    --execute "SELECT password FROM be_users WHERE username='admin' AND admin=1 AND deleted=0")
-test -n "$ORIGINAL_ADMIN_HASH"
-ADMIN_PASSWORD="V19test$(cat /proc/sys/kernel/random/uuid | tr -d '-')"
-ADMIN_HASH=$(php -r 'echo password_hash($argv[1], PASSWORD_ARGON2ID);' "$ADMIN_PASSWORD")
-mariadb typo3 --batch --execute \
-    "UPDATE be_users SET password='$ADMIN_HASH' WHERE username='admin' AND admin=1 AND deleted=0"
+test "$(mariadb typo3 --batch --skip-column-names \
+    --execute "SELECT COUNT(*) FROM be_users WHERE username='admin' AND admin=1 AND deleted=0")" = 1
 
 COOKIE_JAR="$TMPDIR/cookies"
 LOGIN_URL="$BASE_URL/typo3/"
@@ -105,7 +95,7 @@ test -n "$REQUEST_TOKEN"
     --dump-header "$TMPDIR/login-result.headers" \
     --data-urlencode 'login_status=login' \
     --data-urlencode 'username=admin' \
-    --data-urlencode "userident=$ADMIN_PASSWORD" \
+    --data-urlencode "userident=$TKL_TEST_APP_PASS" \
     --data-urlencode 'p_field=' \
     --data-urlencode "__RequestToken=$REQUEST_TOKEN" \
     --output "$TMPDIR/login-result.html"
