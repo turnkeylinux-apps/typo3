@@ -12,8 +12,8 @@ and on top of that:
 
 - TYPO3 CMS configurations:
    
-   - TYPO3 is installed from the `package repository`_ managed directly
-     by the TYPO3 project.
+   - TYPO3 is installed from the official TYPO3 Composer packages with a
+     versioned dependency lock.
 
      **Security note**: Updates to TYPO3 may require supervision so
      they **ARE NOT** configured to install automatically. See below for
@@ -29,10 +29,16 @@ and on top of that:
 Supervised Manual TYPO3 Update
 ------------------------------
 
-To upgrade to the latest version of TYPO3 from the command line::
+Check for a supported TYPO3 13.4 LTS update from the command line::
 
-    cd /var/www/typo3
-    composer update typo3/cms
+    typo3-update --check
+
+Apply the update during a supervised maintenance window::
+
+    typo3-update --apply
+
+The updater backs up ``composer.json`` and ``composer.lock`` under
+``/var/backups/typo3-updater`` before applying an update.
 
 We recommend subscribing to the `TYPO3 security bulletin`_
 
@@ -44,8 +50,7 @@ Credentials *(passwords set at first boot)*
 -  TYPO3 CMS: username **admin**
 
 
-.. _TYPO3 CMS: http://typo3.org/
-.. _package repository: http://composer.typo3.org/
+.. _TYPO3 CMS: https://typo3.org/
 .. _TYPO3 security bulletin: https://typo3.org/teams/security/
 .. _TurnKey Core: https://www.turnkeylinux.org/core
-.. _Adminer: http://www.adminer.net
+.. _Adminer: https://www.adminer.org/

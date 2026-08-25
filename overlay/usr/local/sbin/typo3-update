@@ -1,0 +1,159 @@
+#!/bin/bash
+set -euo pipefail
+
+WEBROOT=/var/www/typo3
+RELEASE_FILE=/usr/local/share/typo3-release
+MODE=check
+
+usage() {
+    echo "Usage: typo3-update [--check|--apply]"
+}
+
+case "${1:---check}" in
+    --check)
+        ;;
+    --apply)
+        MODE=apply
+        ;;
+    --help|-h)
+        usage
+        exit 0
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+
+if [ "$#" -gt 1 ]; then
+    usage >&2
+    exit 2
+fi
+
+MAJOR=$(sed -n 's/^major=//p' "$RELEASE_FILE")
+PINNED_VERSION=$(sed -n 's/^version=//p' "$RELEASE_FILE")
+RELEASE_API=$(sed -n 's/^api=//p' "$RELEASE_FILE")
+PINNED_TAR_SHA256=$(sed -n 's/^tar_sha256=//p' "$RELEASE_FILE")
+
+read -r LATEST_VERSION RELEASE_TYPE TAR_SHA256 < <(
+    python3 - "$RELEASE_API" "$MAJOR" <<'PY'
+import json
+import re
+import sys
+import urllib.request
+
+url, major = sys.argv[1:]
+with urllib.request.urlopen(url, timeout=30) as response:
+    if response.status != 200:
+        raise SystemExit(f"release API returned HTTP {response.status}")
+    release = json.load(response)
+
+version = release.get("version", "")
+release_type = release.get("type", "")
+tar_sha256 = release.get("tar_package", {}).get("sha256sum", "")
+if not re.fullmatch(rf"{re.escape(major)}\.4\.\d+", version):
+    raise SystemExit(f"release API returned an invalid {major}.4 version")
+if release_type not in {"regular", "security"}:
+    raise SystemExit("release API returned an invalid release type")
+if not re.fullmatch(r"[0-9a-f]{64}", tar_sha256):
+    raise SystemExit("release API returned an invalid tar SHA256")
+print(version, release_type, tar_sha256)
+PY
+)
+
+if [ "$LATEST_VERSION" = "$PINNED_VERSION" ] && \
+        [ "$TAR_SHA256" != "$PINNED_TAR_SHA256" ]; then
+    echo "TYPO3 release metadata does not match the appliance pin" >&2
+    exit 3
+fi
+
+cd "$WEBROOT"
+INSTALLED_VERSION=$(
+    turnkey-composer show typo3/cms-core --format=json \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["versions"][0].lstrip("v"))'
+)
+
+STATUS=$(python3 - "$INSTALLED_VERSION" "$LATEST_VERSION" "$MAJOR" <<'PY'
+import re
+import sys
+
+installed, latest, major = sys.argv[1:]
+pattern = rf"{re.escape(major)}\.4\.(\d+)"
+installed_match = re.fullmatch(pattern, installed)
+latest_match = re.fullmatch(pattern, latest)
+if not installed_match or not latest_match:
+    raise SystemExit("installed or latest TYPO3 release is outside the supported LTS line")
+installed_patch = int(installed_match.group(1))
+latest_patch = int(latest_match.group(1))
+if installed_patch < latest_patch:
+    print("update-available")
+elif installed_patch == latest_patch:
+    print("current")
+else:
+    print("ahead")
+PY
+)
+
+echo "installed=$INSTALLED_VERSION"
+echo "latest=$LATEST_VERSION"
+echo "channel=${MAJOR}.4-lts"
+echo "release_type=$RELEASE_TYPE"
+echo "status=$STATUS"
+echo "release_api=$RELEASE_API"
+echo "tar_sha256=$TAR_SHA256"
+
+if [ "$MODE" = check ] || [ "$STATUS" != update-available ]; then
+    exit 0
+fi
+
+BACKUP_DIR="/var/backups/typo3-updater/$(date -u +%Y%m%dT%H%M%SZ)"
+install -d -m 0700 "$BACKUP_DIR"
+install -m 0600 composer.json composer.lock "$BACKUP_DIR"
+
+python3 - "$LATEST_VERSION" <<'PY'
+import json
+import os
+import re
+import sys
+import tempfile
+
+version = sys.argv[1]
+path = "composer.json"
+with open(path, encoding="utf-8") as source:
+    project = json.load(source)
+changed = 0
+for package, constraint in project.get("require", {}).items():
+    if package.startswith("typo3/cms-") and re.fullmatch(r"13\.4\.\d+", constraint):
+        project["require"][package] = version
+        changed += 1
+if not changed:
+    raise SystemExit("no exact TYPO3 core constraints were found")
+directory = os.path.dirname(os.path.abspath(path))
+fd, temporary = tempfile.mkstemp(prefix="composer.", suffix=".json", dir=directory)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as target:
+        json.dump(project, target, indent=4)
+        target.write("\n")
+    os.chmod(temporary, 0o644)
+    os.replace(temporary, path)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+chown www-data:www-data composer.json composer.lock
+
+runuser -u www-data -- turnkey-composer update --with-all-dependencies \
+    'typo3/*' --no-dev --no-interaction --prefer-dist --optimize-autoloader
+runuser -u www-data -- "$WEBROOT/vendor/bin/typo3" extension:setup
+runuser -u www-data -- "$WEBROOT/vendor/bin/typo3" cache:flush
+
+UPDATED_VERSION=$(
+    turnkey-composer show typo3/cms-core --format=json \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["versions"][0].lstrip("v"))'
+)
+if [ "$UPDATED_VERSION" != "$LATEST_VERSION" ]; then
+    echo "TYPO3 update completed with unexpected version $UPDATED_VERSION" >&2
+    exit 4
+fi
+echo "updated=$UPDATED_VERSION"
+echo "backup=$BACKUP_DIR"

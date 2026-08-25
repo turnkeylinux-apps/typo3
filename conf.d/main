@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 DB_NAME=typo3
 DB_USER=typo3
@@ -9,9 +9,14 @@ ADMIN_PASS=Turnkey1!!
 ADMIN_EMAIL=admin@example.com
 
 WEBROOT=/var/www/typo3
+PROJECT_DIR=/usr/local/share/typo3-project
+VERSION=$(sed -n 's/^version=//p' /usr/local/share/typo3-release)
 
-sed -i -E 's|^;? ?(always_populate_raw_post_data =) ?.*$|\1 -1|' /etc/php/?.?/apache2/php.ini
-sed -i -E 's|^;? ?(memory_limit =) ?.*$|\1 256M|;' /etc/php/?.?/cli/php.ini
+for PHPINI in /etc/php/*/apache2/php.ini /etc/php/*/cli/php.ini; do
+    sed -i -E 's|^;? ?(memory_limit =) ?.*$|\1 256M|' "$PHPINI"
+    sed -i -E 's|^;? ?(max_execution_time =) ?.*$|\1 240|' "$PHPINI"
+    sed -i -E 's|^;? ?(max_input_vars =) ?.*$|\1 1500|' "$PHPINI"
+done
 
 # configure apache
 a2dissite 000-default
@@ -23,21 +28,23 @@ a2enmod expires
 service mysql start
 service apache2 start
 
-# setup the database
-MYSQL_BATCH="mysql --batch"
+# Set up the database without exposing the generated password in build logs.
+mysql --batch <<EOF
+CREATE DATABASE \`$DB_NAME\`;
+CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
 
-mysqladmin create $DB_NAME
-$MYSQL_BATCH --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
-
-cd $(dirname $WEBROOT)
-
-chown -R www-data:www-data $(dirname $WEBROOT)
-turnkey-composer create-project typo3/cms-base-distribution='^12.4' typo3 --no-interaction || true
-
-# work around issue "Your configuration does not allow connection to http://composer.typo3.org..."
-cd $WEBROOT
-sed -i '\|://composer.typo3.org/|s|http:|https:|' composer.json
-turnkey-composer update typo3/cms
+install -d -o www-data -g www-data -m 0755 "$WEBROOT"
+install -o www-data -g www-data -m 0644 \
+    "$PROJECT_DIR/composer.json" "$PROJECT_DIR/composer.lock" "$WEBROOT"
+cd "$WEBROOT"
+turnkey-composer install --no-dev --no-interaction --prefer-dist \
+    --optimize-autoloader
+test "$(turnkey-composer show typo3/cms-core --format=json \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["versions"][0].lstrip("v"))')" \
+    = "$VERSION"
 
 TYPO3_DB_DRIVER=mysqli \
  TYPO3_DB_USERNAME=$DB_USER \
@@ -53,17 +60,24 @@ TYPO3_DB_DRIVER=mysqli \
  TYPO3_SERVER_TYPE="apache" \
  turnkey-composer exec typo3 setup
 
-turnkey-composer require typo3/cms-introduction
 COMPOSER_MEMORY_LIMIT=-1 turnkey-composer exec typo3 extension:setup
 
 turnkey-composer dump-autoload --optimize
 
-chown -R root:root $(dirname $WEBROOT)
-chown -R www-data:www-data $WEBROOT/
+chown -R root:root "$(dirname "$WEBROOT")"
+chown -R www-data:www-data "$WEBROOT"
 
 turnkey-composer exec typo3 cache:flush
 
 a2dismod evasive
+
+cat > /etc/cron.d/typo3 <<'EOF'
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+* * * * * www-data /var/www/typo3/vendor/bin/typo3 scheduler:run >/dev/null 2>&1
+EOF
+chmod 0644 /etc/cron.d/typo3
 
 # stop services
 service mysql stop
