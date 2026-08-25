@@ -6,5 +6,5 @@
 [ -e $INITHOOKS_CONF ] && . $INITHOOKS_CONF
 $INITHOOKS_PATH/bin/typo3.py --pass="$APP_PASS" --email="$APP_EMAIL"
 
-# Keep the application database available after credential rotation.
-systemctl start mariadb
+# Recover web and database services after certificate and credential rotation.
+systemctl start mariadb apache2
