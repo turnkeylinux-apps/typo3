@@ -1,3 +1,20 @@
+turnkey-typo3-19.0 (1) turnkey; urgency=low
+
+  * Upgrade the appliance base to Debian 13/Trixie.
+
+  * Install TYPO3 13.4.34 LTS and the Introduction Package from an exact
+    Composer dependency lock.
+
+  * Add a supervised TYPO3 13.4 LTS update command with official release
+    metadata validation, dependency updates, database setup and cache flush.
+
+  * Schedule TYPO3 task processing through cron.
+
+  * Add focused v19 tests for HTTPS admin login, page creation and public read,
+    MariaDB persistence, frontend assets, scheduled tasks and updates.
+
+ -- TurnKey GNU/Linux <admin@turnkeylinux.org>  Tue, 25 Aug 2026 00:00:00 +0000
+
 turnkey-typo3-18.0 (1) turnkey; urgency=low
 
   * Upgraded to latest LTS version of TYPO3 12.x via composer: 12.4.12

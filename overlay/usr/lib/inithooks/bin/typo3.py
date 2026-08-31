@@ -9,12 +9,13 @@ Option:
 
 import sys
 import getopt
+from pathlib import Path
+import re
 from libinithooks import inithooks_cache
 from argon2 import PasswordHasher
 
 from libinithooks.dialog_wrapper import Dialog
 from mysqlconf import MySQL
-import subprocess
 
 
 def usage(s=None):
@@ -64,18 +65,23 @@ def main():
             memory_cost = 65536,
             parallelism = 1,
             encoding = 'utf8')
-    hash = ph.hash(password)
+    password_hash = ph.hash(password)
 
     m = MySQL()
     for username in ('admin', 'simple_editor', 'advanced_editor', 'news_editor'):
-        m.execute('UPDATE typo3.be_users SET password=%s WHERE username=%s;', (hash, username, ))
+        m.execute('UPDATE typo3.be_users SET password=%s WHERE username=%s;', (password_hash, username, ))
         m.execute('UPDATE typo3.be_users SET email=%s WHERE username=%s;', (email, username, ))
 
-    config = "/var/www/typo3/config/system/settings.php"
-    subprocess.run([
-        "sed", "-i",
-        f"s|^\\('installToolPassword' =>\\) '[^']',$|\\1 '{hash}', // Updated by inithook|",
-        config])
+    config = Path("/var/www/typo3/config/system/settings.php")
+    settings = config.read_text()
+    settings, count = re.subn(
+        r"^(\s*'installToolPassword' =>) '[^']*',.*$",
+        rf"\1 '{password_hash}', // Updated by inithook",
+        settings,
+        flags=re.MULTILINE)
+    if count != 1:
+        raise RuntimeError("TYPO3 install tool password setting was not unique")
+    config.write_text(settings)
 
 if __name__ == "__main__":
     main()
